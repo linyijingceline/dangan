@@ -1,0 +1,16 @@
+# 环境变量（里面有管理员口令和数据库连接信息，绝不进仓库）
+.env
+.env.local
+.env.*.local
+
+# 真实档案数据（队员的电话、住址等个人信息，绝不进仓库）
+profiles.csv
+profiles.json
+data/
+exports/
+*.csv
+
+# 依赖与系统文件
+node_modules/
+.DS_Store
+Thumbs.db
