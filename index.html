@@ -16,11 +16,20 @@
       <a class="btn" href="submit.html">我来填写</a>
     </header>
 
+    <!-- 开发预览用：只有假数据模式下才出现，用来检查四种页面状态 -->
+    <div id="devBar" class="dev-bar" style="display:none">
+      <span>状态预览（开发用）：</span>
+      <button type="button" data-state="data">有数据</button>
+      <button type="button" data-state="loading">加载中</button>
+      <button type="button" data-state="empty">空列表</button>
+      <button type="button" data-state="error">加载失败</button>
+      <span style="color:#b45309">当前是本地假数据，未连数据库</span>
+    </div>
+
     <div id="msg" class="msg"></div>
 
-    <div id="list" class="grid">
-      <div class="empty">正在加载…</div>
-    </div>
+    <!-- 主视图：四种状态都渲染在这里 -->
+    <div id="list" class="grid"></div>
 
     <footer>
       档案由伙伴本人填写，信息仅团队内部使用。<br>
@@ -29,39 +38,83 @@
     </footer>
   </div>
 
+  <script src="js/mock-data.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/card.js"></script>
   <script>
+    /**
+     * 主视图（列表页）——四种页面状态
+     *
+     * 这四种状态，最容易被忽略的是「加载中」和「错误」：
+     *  - 自己开发时数据是本地的，一闪就出来了，根本不会去想"慢的时候用户看到什么"
+     *  - 错误更是只有真出错时才想起来，于是用户看到一片白屏
+     * 所以这两种状态我特意做成了"看得见的样子"：加载中是骨架屏，错误是一张能重试的卡片。
+     */
     const listEl = document.getElementById('list');
     const msgEl = document.getElementById('msg');
+    const devBar = document.getElementById('devBar');
 
-    function cardHtml(p) {
-      const first = (p.name || '?').trim().charAt(0);
-      const tags = [p.major, p.school].filter(Boolean).map(esc).join(' · ');
-      const extra = [p.birthday ? '生日 ' + esc(p.birthday) : '', p.hobby ? '爱好 ' + esc(p.hobby) : '']
-        .filter(Boolean).join(' · ');
-      return '<a class="person" href="profile.html?id=' + encodeURIComponent(p.id) + '">' +
-        '<div class="avatar">' + esc(first) + '</div>' +
-        '<div>' +
-          '<div class="name">' + esc(p.name) + '</div>' +
-          '<div class="meta">' + tags + '</div>' +
-          (extra ? '<div class="meta">' + extra + '</div>' : '') +
-          '<div class="meta">加入于 ' + fmtDate(p.joined_at) + '</div>' +
-        '</div>' +
-      '</a>';
+    function renderLoading() {
+      listEl.className = 'grid';
+      listEl.innerHTML = ProfileCard.skeleton(4);
+    }
+
+    function renderData(list) {
+      listEl.className = 'grid';
+      listEl.innerHTML = ProfileCard.list(list);
+    }
+
+    function renderEmpty() {
+      listEl.className = '';
+      listEl.innerHTML =
+        '<div class="state-box">' +
+          '<div class="state-title">还没有人填写</div>' +
+          '<div>把链接发给伙伴，让他们自己填一份吧</div>' +
+          '<div class="state-actions"><a class="btn" href="submit.html">我来填写</a></div>' +
+        '</div>';
+    }
+
+    function renderError(message) {
+      listEl.className = '';
+      listEl.innerHTML =
+        '<div class="state-box">' +
+          '<div class="state-title">加载失败</div>' +
+          '<div>' + esc(message || '出了点问题，请稍后再试') + '</div>' +
+          '<div class="state-actions"><button class="btn" type="button" id="retryBtn">重试</button></div>' +
+        '</div>';
+      const btn = document.getElementById('retryBtn');
+      if (btn) btn.addEventListener('click', load);
     }
 
     async function load() {
+      msgEl.className = 'msg';
+      renderLoading();
       try {
         const res = await callApi('listProfiles');
-        if (!res.list.length) {
-          listEl.innerHTML = '<div class="empty">还没有人填写，快去邀请伙伴吧</div>';
-          return;
-        }
-        listEl.innerHTML = res.list.map(cardHtml).join('');
+        if (!res.list || !res.list.length) renderEmpty();
+        else renderData(res.list);
       } catch (e) {
-        listEl.innerHTML = '<div class="empty">加载失败</div>';
-        showMsg(msgEl, e.message, 'bad');
+        renderError(e.message);
       }
+    }
+
+    // 开发预览：切换四种状态
+    if (typeof USE_MOCK !== 'undefined' && USE_MOCK) {
+      devBar.style.display = 'flex';
+      devBar.addEventListener('click', function (e) {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const want = btn.getAttribute('data-state');
+
+        mockControl.fail = want === 'error';
+        mockControl.empty = want === 'empty';
+        mockControl.delay = want === 'loading' ? 4000 : 700;
+
+        Array.prototype.forEach.call(devBar.querySelectorAll('button'), function (b) {
+          b.classList.toggle('on', b === btn);
+        });
+        load();
+      });
     }
 
     load();

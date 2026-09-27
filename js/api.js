@@ -9,7 +9,43 @@
 const API_BASE =
   'https://partner-profile-d0fjkj7a9c4abacc-1495948086.ap-shanghai.app.tcloudbase.com/api';
 
+/**
+ * Day 8：改用本地假数据渲染页面
+ *
+ * 为什么要有这个开关：
+ * 先把"页面长什么样、四种状态怎么表现"定下来，再谈接真实数据。
+ * 调试页面时不该每次都等网络，也不该因为数据库里没数据就看不到效果。
+ *
+ * USE_MOCK = true   → 用 js/mock-data.js 里的假数据（今天的做法）
+ * USE_MOCK = false  → 走真实云函数（第 3 周切回这个）
+ */
+const USE_MOCK = true;
+
+// 假数据的可控开关，配合首页的"状态预览"用
+const mockControl = {
+  delay: 700,   // 模拟网络延迟，才看得出"加载中"状态
+  fail: false,  // 打开后模拟"请求失败"，用来看错误状态
+  empty: false, // 打开后模拟"一条数据都没有"，用来看空状态
+};
+
+async function mockCall(action, data) {
+  await new Promise(function (r) { setTimeout(r, mockControl.delay); });
+
+  if (mockControl.fail) throw new Error('加载失败：连不上服务器（这是假数据模拟出来的错误）');
+  if (mockControl.empty) return { ok: true, list: [] };
+
+  if (action === 'listProfiles') return { ok: true, list: MOCK_PROFILES };
+  if (action === 'getProfile') {
+    const p = MOCK_PROFILES.find(function (x) { return x.id === (data && data.id); });
+    if (!p) throw new Error('这条档案不存在或已被删除');
+    return { ok: true, profile: p };
+  }
+  return { ok: false, msg: '假数据模式暂不支持这个操作：' + action };
+}
+
 async function callApi(action, data) {
+  if (USE_MOCK) return mockCall(action, data);
+
   let res;
   try {
     res = await fetch(API_BASE, {
