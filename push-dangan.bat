@@ -16,8 +16,8 @@ git --version
 git push -u origin main
 echo.
 if %errorlevel%==0 (
-  echo ===== PUSH SUCCEEDED :) You can close this window. =====
+  echo ===== PUSH SUCCEEDED - you can close this window =====
 ) else (
-  echo ===== PUSH FAILED :( Copy the red error text above. =====
+  echo ===== PUSH FAILED - copy the error text above =====
 )
 pause
