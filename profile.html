@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>档案详情 · 伙伴档案</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>档案详情</h1>
+        <div class="sub">电话与家庭住址仅管理员可见</div>
+      </div>
+      <a class="btn ghost" href="index.html">返回列表</a>
+    </header>
+
+    <div id="msg" class="msg"></div>
+    <div id="detail" class="card">正在加载…</div>
+
+    <footer>
+      信息由本人填写，如有变动请联系管理员修改。
+    </footer>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    const msgEl = document.getElementById('msg');
+    const box = document.getElementById('detail');
+
+    function row(label, value) {
+      if (!value) return '';
+      return '<div style="margin-bottom:8px"><span style="color:#6b7280;display:inline-block;width:80px">' +
+        label + '</span>' + esc(value) + '</div>';
+    }
+
+    async function load() {
+      const id = getParam('id');
+      if (!id) {
+        box.innerHTML = '<div class="empty">缺少档案编号</div>';
+        return;
+      }
+      try {
+        const res = await callApi('getProfile', { id: id });
+        const p = res.profile;
+        box.innerHTML =
+          '<div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">' +
+            '<div class="avatar">' + esc((p.name || '?').charAt(0)) + '</div>' +
+            '<div><div style="font-size:18px;font-weight:600">' + esc(p.name) + '</div>' +
+            '<div style="color:#6b7280;font-size:13px">' + esc([p.major, p.school].filter(Boolean).join(' · ')) + '</div></div>' +
+          '</div>' +
+          row('生日', p.birthday) +
+          row('爱好', p.hobby) +
+          row('加入时间', fmtDate(p.joined_at));
+      } catch (e) {
+        box.innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+        showMsg(msgEl, e.message, 'bad');
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

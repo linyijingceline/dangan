@@ -1,0 +1,7 @@
+{
+  "name": "api-http",
+  "version": "1.0.0",
+  "description": "伙伴档案 HTTP 云函数：走官方 REST 接口读写数据库，不需要任何依赖",
+  "main": "index.js",
+  "dependencies": {}
+}

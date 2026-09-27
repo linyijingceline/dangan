@@ -1,0 +1,9 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "伙伴档案：所有数据库读写都走这里，网页不直接碰数据库",
+  "main": "index.js",
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}

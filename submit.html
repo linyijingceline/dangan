@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>填写我的档案 · 伙伴档案</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>填写我的档案</h1>
+        <div class="sub">不用注册，填完提交就行</div>
+      </div>
+      <a class="btn ghost" href="index.html">返回列表</a>
+    </header>
+
+    <!-- 合规要求：收集敏感信息前必须告知 -->
+    <div class="note">
+      说明：你填写的姓名、专业、学校、生日、爱好会在团队档案页展示；
+      <strong>电话和家庭住址只有管理员能看到</strong>，不会出现在公开页面上。
+    </div>
+
+    <div id="msg" class="msg"></div>
+
+    <form id="form" class="card" novalidate>
+      <div class="field" data-key="name">
+        <label>姓名 <span class="req">必填</span></label>
+        <input name="name" type="text" autocomplete="off">
+        <div class="err">姓名不能为空</div>
+      </div>
+      <div class="field" data-key="major">
+        <label>专业 <span class="req">必填</span></label>
+        <input name="major" type="text" autocomplete="off">
+        <div class="err">专业不能为空</div>
+      </div>
+      <div class="field" data-key="school">
+        <label>学校 <span class="req">必填</span></label>
+        <input name="school" type="text" autocomplete="off">
+        <div class="err">学校不能为空</div>
+      </div>
+      <div class="field" data-key="phone">
+        <label>电话 <span class="req">必填（仅管理员可见）</span></label>
+        <input name="phone" type="tel" autocomplete="off">
+        <div class="err">电话不能为空</div>
+      </div>
+      <div class="field" data-key="address">
+        <label>家庭住址 <span class="req">必填（仅管理员可见）</span></label>
+        <input name="address" type="text" autocomplete="off">
+        <div class="err">家庭住址不能为空</div>
+      </div>
+      <div class="field" data-key="birthday">
+        <label>生日 <span class="req">选填</span></label>
+        <input name="birthday" type="date">
+        <div class="err"></div>
+      </div>
+      <div class="field" data-key="hobby">
+        <label>爱好 <span class="req">选填</span></label>
+        <input name="hobby" type="text" autocomplete="off">
+        <div class="err"></div>
+      </div>
+
+      <button class="btn" id="submitBtn" type="submit">提交档案</button>
+    </form>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    const form = document.getElementById('form');
+    const msgEl = document.getElementById('msg');
+    const btn = document.getElementById('submitBtn');
+    const required = ['name', 'major', 'school', 'phone', 'address'];
+
+    function validate() {
+      let ok = true;
+      required.forEach(function (k) {
+        const field = form.querySelector('.field[data-key="' + k + '"]');
+        const val = form.elements[k].value.trim();
+        if (!val) {
+          field.classList.add('invalid');
+          ok = false;
+        } else {
+          field.classList.remove('invalid');
+        }
+      });
+      return ok;
+    }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      msgEl.className = 'msg';
+      if (!validate()) {
+        showMsg(msgEl, '还有必填项没填，请检查标红的地方', 'bad');
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = '提交中…';
+      try {
+        await callApi('submitProfile', {
+          name: form.elements.name.value.trim(),
+          major: form.elements.major.value.trim(),
+          school: form.elements.school.value.trim(),
+          phone: form.elements.phone.value.trim(),
+          address: form.elements.address.value.trim(),
+          birthday: form.elements.birthday.value,
+          hobby: form.elements.hobby.value.trim(),
+        });
+        showMsg(msgEl, '提交成功，你的档案已加入！', 'ok');
+        form.reset();
+        setTimeout(function () {
+          location.href = 'index.html';
+        }, 1500);
+      } catch (err) {
+        showMsg(msgEl, err.message || '提交失败，请重试', 'bad');
+        btn.disabled = false;
+        btn.textContent = '提交档案';
+      }
+    });
+  </script>
+</body>
+</html>

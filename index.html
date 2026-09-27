@@ -4,10 +4,67 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>伙伴档案</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h1>伙伴档案</h1>
-  <p>收集和展示团队成员的个人档案。</p>
-  <p>当前状态：Day 2，仓库刚建好，功能开发中。</p>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>伙伴档案</h1>
+        <div class="sub">团队伙伴的信息都在这儿</div>
+      </div>
+      <a class="btn" href="submit.html">我来填写</a>
+    </header>
+
+    <div id="msg" class="msg"></div>
+
+    <div id="list" class="grid">
+      <div class="empty">正在加载…</div>
+    </div>
+
+    <footer>
+      档案由伙伴本人填写，信息仅团队内部使用。<br>
+      电话与家庭住址仅管理员可见，不在本页展示。
+      <br><a href="admin.html" style="color:#9ca3af">管理员入口</a>
+    </footer>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    const listEl = document.getElementById('list');
+    const msgEl = document.getElementById('msg');
+
+    function cardHtml(p) {
+      const first = (p.name || '?').trim().charAt(0);
+      const tags = [p.major, p.school].filter(Boolean).map(esc).join(' · ');
+      const extra = [p.birthday ? '生日 ' + esc(p.birthday) : '', p.hobby ? '爱好 ' + esc(p.hobby) : '']
+        .filter(Boolean).join(' · ');
+      return '<a class="person" href="profile.html?id=' + encodeURIComponent(p.id) + '">' +
+        '<div class="avatar">' + esc(first) + '</div>' +
+        '<div>' +
+          '<div class="name">' + esc(p.name) + '</div>' +
+          '<div class="meta">' + tags + '</div>' +
+          (extra ? '<div class="meta">' + extra + '</div>' : '') +
+          '<div class="meta">加入于 ' + fmtDate(p.joined_at) + '</div>' +
+        '</div>' +
+      '</a>';
+    }
+
+    async function load() {
+      try {
+        const res = await callApi('listProfiles');
+        if (!res.list.length) {
+          listEl.innerHTML = '<div class="empty">还没有人填写，快去邀请伙伴吧</div>';
+          return;
+        }
+        listEl.innerHTML = res.list.map(cardHtml).join('');
+      } catch (e) {
+        listEl.innerHTML = '<div class="empty">加载失败</div>';
+        showMsg(msgEl, e.message, 'bad');
+      }
+    }
+
+    load();
+  </script>
 </body>
 </html>

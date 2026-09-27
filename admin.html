@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理 · 伙伴档案</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>档案管理</h1>
+        <div class="sub">管理员专用，请妥善保管口令</div>
+      </div>
+      <a class="btn ghost" href="index.html">返回列表</a>
+    </header>
+
+    <!-- 第一步：输口令 -->
+    <div id="gate" class="card">
+      <div class="field">
+        <label>管理员口令</label>
+        <input id="pass" type="password" placeholder="输入口令后回车">
+      </div>
+      <button class="btn" id="loginBtn" type="button">进入</button>
+      <div id="gateMsg" class="msg"></div>
+    </div>
+
+    <!-- 第二步：进入后才显示 -->
+    <div id="panel" style="display:none">
+      <div id="msg" class="msg"></div>
+
+      <h2 id="formTitle" style="font-size:16px;margin:18px 0 10px">新增档案</h2>
+      <form id="editForm" class="card">
+        <div class="field"><label>姓名</label><input name="name"></div>
+        <div class="field"><label>专业</label><input name="major"></div>
+        <div class="field"><label>学校</label><input name="school"></div>
+        <div class="field"><label>电话</label><input name="phone"></div>
+        <div class="field"><label>家庭住址</label><input name="address"></div>
+        <div class="field"><label>生日</label><input name="birthday" type="date"></div>
+        <div class="field"><label>爱好</label><input name="hobby"></div>
+        <div class="field"><label>备注（仅管理员可见）</label><input name="note"></div>
+        <button class="btn" id="saveBtn" type="submit">保存</button>
+        <button class="btn ghost" id="resetBtn" type="button">清空（新增）</button>
+      </form>
+
+      <h2 style="font-size:16px;margin:22px 0 10px">全部档案</h2>
+      <div class="card" style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>姓名</th><th>专业</th><th>学校</th>
+              <th>电话</th><th>住址</th><th>备注</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"><tr><td colspan="7">正在加载…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    const gate = document.getElementById('gate');
+    const panel = document.getElementById('panel');
+    const gateMsg = document.getElementById('gateMsg');
+    const msgEl = document.getElementById('msg');
+    const tbody = document.getElementById('tbody');
+    const form = document.getElementById('editForm');
+    const titleEl = document.getElementById('formTitle');
+
+    let pass = '';
+    let editingId = '';
+
+    async function enter() {
+      const v = document.getElementById('pass').value.trim();
+      if (!v) {
+        showMsg(gateMsg, '请输入口令', 'bad');
+        return;
+      }
+      try {
+        await callApi('adminVerify', { pass: v });
+        pass = v;
+        gate.style.display = 'none';
+        panel.style.display = 'block';
+        loadList();
+      } catch (e) {
+        showMsg(gateMsg, e.message, 'bad');
+      }
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', enter);
+    document.getElementById('pass').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') enter();
+    });
+
+    async function loadList() {
+      try {
+        const res = await callApi('adminList', { pass: pass });
+        if (!res.list.length) {
+          tbody.innerHTML = '<tr><td colspan="7">还没有档案</td></tr>';
+          return;
+        }
+        tbody.innerHTML = res.list.map(function (p) {
+          return '<tr data-id="' + esc(p.id) + '">' +
+            '<td>' + esc(p.name) + '</td>' +
+            '<td>' + esc(p.major) + '</td>' +
+            '<td>' + esc(p.school) + '</td>' +
+            '<td>' + esc(p.phone) + '</td>' +
+            '<td>' + esc(p.address) + '</td>' +
+            '<td>' + esc(p.note) + '</td>' +
+            '<td class="row-actions">' +
+              '<button type="button" data-act="edit">编辑</button>' +
+              '<button type="button" data-act="del" class="del">删除</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7">' + esc(e.message) + '</td></tr>';
+      }
+    }
+
+    tbody.addEventListener('click', async function (e) {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const tr = btn.closest('tr');
+      const id = tr.getAttribute('data-id');
+      const act = btn.getAttribute('data-act');
+
+      if (act === 'edit') {
+        const res = await callApi('adminList', { pass: pass });
+        const p = res.list.find(function (x) { return x.id === id; });
+        if (!p) return;
+        editingId = id;
+        titleEl.textContent = '编辑档案：' + p.name;
+        ['name', 'major', 'school', 'phone', 'address', 'birthday', 'hobby', 'note'].forEach(function (k) {
+          form.elements[k].value = p[k] || '';
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      if (act === 'del') {
+        const name = tr.children[0].textContent;
+        // 删除前二次确认，防止误删
+        if (!confirm('确定删除「' + name + '」这条档案吗？删除后无法恢复。')) return;
+        try {
+          await callApi('adminDelete', { pass: pass, id: id });
+          showMsg(msgEl, '已删除', 'ok');
+          loadList();
+        } catch (err) {
+          showMsg(msgEl, err.message, 'bad');
+        }
+      }
+    });
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const data = {
+        pass: pass,
+        name: form.elements.name.value.trim(),
+        major: form.elements.major.value.trim(),
+        school: form.elements.school.value.trim(),
+        phone: form.elements.phone.value.trim(),
+        address: form.elements.address.value.trim(),
+        birthday: form.elements.birthday.value,
+        hobby: form.elements.hobby.value.trim(),
+        note: form.elements.note.value.trim(),
+      };
+      if (!data.name || !data.major || !data.school || !data.phone || !data.address) {
+        showMsg(msgEl, '姓名、专业、学校、电话、住址都不能为空', 'bad');
+        return;
+      }
+      try {
+        if (editingId) {
+          data.id = editingId;
+          await callApi('adminUpdate', data);
+          showMsg(msgEl, '已保存修改', 'ok');
+        } else {
+          await callApi('submitProfile', data);
+          showMsg(msgEl, '已新增档案', 'ok');
+        }
+        form.reset();
+        editingId = '';
+        titleEl.textContent = '新增档案';
+        loadList();
+      } catch (err) {
+        showMsg(msgEl, err.message, 'bad');
+      }
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', function () {
+      form.reset();
+      editingId = '';
+      titleEl.textContent = '新增档案';
+    });
+  </script>
+</body>
+</html>
