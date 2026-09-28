@@ -29,10 +29,10 @@
     const msgEl = document.getElementById('msg');
     const box = document.getElementById('detail');
 
+    // 标签与值两列对齐：样式写在 .detail-row 里，值换行时会自动缩进而不是顶格
     function row(label, value) {
       if (!value) return '';
-      return '<div style="margin-bottom:8px"><span style="color:#6b7280;display:inline-block;width:80px">' +
-        label + '</span>' + esc(value) + '</div>';
+      return '<div class="detail-row"><dt>' + label + '</dt><dd>' + esc(value) + '</dd></div>';
     }
 
     async function load() {
@@ -45,10 +45,12 @@
         const res = await callApi('getProfile', { id: id });
         const p = res.profile;
         box.innerHTML =
-          '<div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">' +
+          '<div class="person" style="border:0;padding:0;margin-bottom:var(--space-4)">' +
             '<div class="avatar">' + esc((p.name || '?').charAt(0)) + '</div>' +
-            '<div><div style="font-size:18px;font-weight:600">' + esc(p.name) + '</div>' +
-            '<div style="color:#6b7280;font-size:13px">' + esc([p.major, p.school].filter(Boolean).join(' · ')) + '</div></div>' +
+            '<div class="person-body">' +
+              '<div class="name" style="font-size:18px">' + esc(p.name) + '</div>' +
+              '<div class="meta">' + esc([p.major, p.school].filter(Boolean).join(' · ')) + '</div>' +
+            '</div>' +
           '</div>' +
           row('生日', p.birthday) +
           row('爱好', p.hobby) +

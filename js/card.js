@@ -8,6 +8,14 @@
  * 用法：
  *   container.innerHTML = ProfileCard.html(profile);
  *   或者  container.innerHTML = ProfileCard.list(profiles);
+ *
+ * 组件约束（新增或修改卡片时照这套走，别自己另立一套）：
+ *   1. 外层用 .person，内边距 --space-4，头像与正文间距 --space-3，圆角 --radius-lg
+ *   2. 头像与正文垂直居中（.person 里已设 align-items: center）
+ *   3. 正文容器必须带 .person-body（min-width: 0），长名字才截得住
+ *   4. 次要信息用 .meta：13px、--muted、行间距 --space-1
+ *   5. 缺字段就不渲染那一行，别留空标签占位
+ *   6. 用户内容必须过 esc()，否则填的内容能把页面结构搞乱
  */
 
 const ProfileCard = {

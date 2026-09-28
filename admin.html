@@ -102,13 +102,14 @@
           return;
         }
         tbody.innerHTML = res.list.map(function (p) {
+          // data-label 是给窄屏用的：手机上表格会堆叠成卡片，用它显示每行的列名
           return '<tr data-id="' + esc(p.id) + '">' +
-            '<td>' + esc(p.name) + '</td>' +
-            '<td>' + esc(p.major) + '</td>' +
-            '<td>' + esc(p.school) + '</td>' +
-            '<td>' + esc(p.phone) + '</td>' +
-            '<td>' + esc(p.address) + '</td>' +
-            '<td>' + esc(p.note) + '</td>' +
+            '<td data-label="姓名">' + esc(p.name) + '</td>' +
+            '<td data-label="专业">' + esc(p.major) + '</td>' +
+            '<td data-label="学校">' + esc(p.school) + '</td>' +
+            '<td data-label="电话">' + esc(p.phone) + '</td>' +
+            '<td data-label="住址">' + esc(p.address) + '</td>' +
+            '<td data-label="备注">' + esc(p.note) + '</td>' +
             '<td class="row-actions">' +
               '<button type="button" data-act="edit">编辑</button>' +
               '<button type="button" data-act="del" class="del">删除</button>' +
