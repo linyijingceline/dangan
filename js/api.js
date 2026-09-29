@@ -28,18 +28,71 @@ const mockControl = {
   empty: false, // 打开后模拟"一条数据都没有"，用来看空状态
 };
 
+/**
+ * 假数据模式下的"内存数据库"。
+ * 增删改只改这份副本，**刷新页面就还原**，永远不会碰到真实数据库。
+ * 这样管理页在本地也能完整走通新增/编辑/删除。
+ */
+let mockStore = MOCK_PROFILES.map(function (p) { return Object.assign({}, p); });
+
+function mockNewId() {
+  return 'mock-' + String(mockStore.length + 1).padStart(3, '0') + '-' + String(Date.now()).slice(-4);
+}
+
 async function mockCall(action, data) {
   await new Promise(function (r) { setTimeout(r, mockControl.delay); });
 
   if (mockControl.fail) throw new Error('加载失败：连不上服务器（这是假数据模拟出来的错误）');
   if (mockControl.empty) return { ok: true, list: [] };
 
-  if (action === 'listProfiles') return { ok: true, list: MOCK_PROFILES };
+  const d = data || {};
+
+  if (action === 'listProfiles') return { ok: true, list: mockStore };
+
   if (action === 'getProfile') {
-    const p = MOCK_PROFILES.find(function (x) { return x.id === (data && data.id); });
+    const p = mockStore.find(function (x) { return x.id === d.id; });
     if (!p) throw new Error('这条档案不存在或已被删除');
     return { ok: true, profile: p };
   }
+
+  // ---- 管理页的四个动作：假数据模式下照样能用 ----
+  if (action === 'adminVerify') {
+    if (!String(d.pass || '').trim()) throw new Error('请输入口令');
+    return { ok: true };   // 假数据模式不校验口令，方便本地调试
+  }
+
+  if (action === 'adminList') return { ok: true, list: mockStore };
+
+  if (action === 'adminUpdate') {
+    const i = mockStore.findIndex(function (x) { return x.id === d.id; });
+    if (i < 0) throw new Error('这条档案不存在或已被删除');
+    mockStore[i] = Object.assign({}, mockStore[i], {
+      name: d.name, major: d.major, school: d.school,
+      birthday: d.birthday || '', hobby: d.hobby || '',
+      phone: d.phone, address: d.address, note: d.note || '',
+    });
+    return { ok: true };
+  }
+
+  if (action === 'adminDelete') {
+    const i = mockStore.findIndex(function (x) { return x.id === d.id; });
+    if (i < 0) throw new Error('这条档案不存在或已被删除');
+    mockStore.splice(i, 1);
+    return { ok: true };
+  }
+
+  if (action === 'submitProfile') {
+    if (!String(d.name || '').trim()) throw new Error('姓名不能为空');
+    const id = mockNewId();
+    mockStore.unshift({
+      id: id, name: d.name, major: d.major, school: d.school,
+      birthday: d.birthday || '', hobby: d.hobby || '',
+      phone: d.phone, address: d.address, note: '',
+      joined_at: new Date().toISOString(),
+    });
+    return { ok: true, id: id };
+  }
+
   return { ok: false, msg: '假数据模式暂不支持这个操作：' + action };
 }
 

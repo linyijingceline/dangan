@@ -18,6 +18,9 @@
 
     <!-- 第一步：输口令 -->
     <div id="gate" class="card">
+      <div id="mockHint" class="note" style="display:none">
+        本地假数据模式：口令随便填（比如 123456）就能进，改动只存在内存里，刷新即还原。
+      </div>
       <div class="field">
         <label>管理员口令</label>
         <input id="pass" type="password" placeholder="输入口令后回车">
@@ -72,6 +75,11 @@
     let pass = '';
     let editingId = '';
 
+    // 假数据模式下，明确告诉使用者"口令随便填"，免得对着口令框发呆
+    if (typeof USE_MOCK !== 'undefined' && USE_MOCK) {
+      document.getElementById('mockHint').style.display = 'block';
+    }
+
     async function enter() {
       const v = document.getElementById('pass').value.trim();
       if (!v) {
@@ -97,11 +105,14 @@
     async function loadList() {
       try {
         const res = await callApi('adminList', { pass: pass });
-        if (!res.list.length) {
+        // res.list 兜一层：万一接口没按约定返回数组，页面显示"还没有档案"，
+        // 而不是把 "Cannot read properties of undefined" 这种报错丢给用户看
+        const list = res.list || [];
+        if (!list.length) {
           tbody.innerHTML = '<tr><td colspan="7">还没有档案</td></tr>';
           return;
         }
-        tbody.innerHTML = res.list.map(function (p) {
+        tbody.innerHTML = list.map(function (p) {
           // data-label 是给窄屏用的：手机上表格会堆叠成卡片，用它显示每行的列名
           return '<tr data-id="' + esc(p.id) + '">' +
             '<td data-label="姓名">' + esc(p.name) + '</td>' +
